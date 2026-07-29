@@ -83,11 +83,11 @@ iptable_mangle_exit_code=$?
 if [[ $iptable_mangle_exit_code == 0 ]]; then
 	echo "[INFO] iptable_mangle support detected, adding fwmark for tables" | ts '%Y-%m-%d %H:%M:%.S'
 
-	# setup route for qBittorrent webui using set-mark to route traffic for port 8080 and 8999 to "${docker_interface}"
-	echo "8080    webui" >> /etc/iproute2/rt_tables
-	echo "8999    webui" >> /etc/iproute2/rt_tables
-	ip rule add fwmark 1 table webui
-	ip route add default via ${DEFAULT_GATEWAY} table webui
+	# Use a numeric table ID so this works with both the Bullseye and Trixie
+	# iproute2 layouts. The table is used for marked WebUI reply traffic.
+	WEBUI_ROUTE_TABLE=200
+	ip rule add fwmark 1 table "${WEBUI_ROUTE_TABLE}"
+	ip route add default via "${DEFAULT_GATEWAY}" dev "${docker_interface}" table "${WEBUI_ROUTE_TABLE}"
 fi
 
 # input iptable rules

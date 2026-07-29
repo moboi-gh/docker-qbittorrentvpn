@@ -1,18 +1,17 @@
 # [qBittorrent](https://github.com/qbittorrent/qBittorrent), WireGuard and OpenVPN
-[![Docker Pulls](https://img.shields.io/docker/pulls/dyonr/qbittorrentvpn)](https://hub.docker.com/r/dyonr/qbittorrentvpn)
-[![Docker Image Size (tag)](https://img.shields.io/docker/image-size/dyonr/qbittorrentvpn/latest)](https://hub.docker.com/r/dyonr/qbittorrentvpn)
+[![Docker Pulls](https://img.shields.io/docker/pulls/moboi/qbittorrentvpn)](https://hub.docker.com/r/moboi/qbittorrentvpn)
+[![Docker Image Size (tag)](https://img.shields.io/docker/image-size/moboi/qbittorrentvpn/5.2.3)](https://hub.docker.com/r/moboi/qbittorrentvpn)
 
-Docker container which runs the latest [qBittorrent](https://github.com/qbittorrent/qBittorrent)-nox client while connecting to WireGuard or OpenVPN with iptables killswitch to prevent IP leakage when the tunnel goes down.
+Docker container which runs [qBittorrent](https://github.com/qbittorrent/qBittorrent) 5.2.3 with libtorrent 1.2.20 while connecting to WireGuard or OpenVPN with an iptables killswitch to prevent IP leakage when the tunnel goes down. Images are available for `linux/amd64` and `linux/arm64`.
 
 [preview]: https://raw.githubusercontent.com/DyonR/docker-templates/master/Screenshots/qbittorrentvpn/qbittorrentvpn-webui.png "qBittorrent WebUI"
 ![alt text][preview]
 
 # Docker Features
-* Base: Debian bullseye-slim
-* [qBittorrent](https://github.com/qbittorrent/qBittorrent) compiled from source
-* [libtorrent](https://github.com/arvidn/libtorrent) compiled from source
-* Compiled with the latest version of [Boost](https://www.boost.org/)
-* Compiled with the latest versions of [CMake](https://cmake.org/)
+* Base: Debian 13.6 slim
+* [qBittorrent](https://github.com/qbittorrent/qBittorrent) 5.2.3 compiled from a checksum-verified release archive
+* [libtorrent](https://github.com/arvidn/libtorrent) 1.2.20 compiled from source
+* Native `linux/amd64` and `linux/arm64` builds
 * Selectively enable or disable WireGuard or OpenVPN support
 * IP tables killswitch to prevent IP leaking when VPN connection fails
 * Configurable UID and GID for config files and /downloads for qBittorrent
@@ -34,18 +33,22 @@ $ docker run  -d \
               --cap-add NET_ADMIN \
               --sysctl "net.ipv4.conf.all.src_valid_mark=1" \
               --restart unless-stopped \
-              dyonr/qbittorrentvpn
+              moboi/qbittorrentvpn:5.2.3
 ```
 
 ## Docker Tags
 | Tag | Description |
 |----------|----------|
-| `dyonr/qbittorrentvpn:latest` | The latest version of qBittorrent with libtorrent 1_x_x |
-| `dyonr/qbittorrentvpn:rc_2_0` | The latest version of qBittorrent with libtorrent 2_x_x |
-| `dyonr/qbittorrentvpn:legacy_iptables` | The latest version of qBittorrent, libtorrent 1_x_x and an experimental feature to fix problems with QNAP NAS systems, [Issue #25](https://github.com/DyonR/docker-qbittorrentvpn/issues/25) |
-| `dyonr/qbittorrentvpn:alpha` | The latest alpha version of qBittorrent with libtorrent 2_0, incase you feel like testing new features |
-| `dyonr/qbittorrentvpn:dev` | This branch is used for testing new Docker features or improvements before merging it to the main branch |
-| `dyonr/qbittorrentvpn:v4_2_x` | (Legacy) qBittorrent version 4.2.x with libtorrent 1_x_x |
+| `moboi/qbittorrentvpn:5.2.3` | qBittorrent 5.2.3 with libtorrent 1.2.20 for amd64 and arm64 |
+
+To build and publish the multi-platform tag:
+
+```sh
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  --tag moboi/qbittorrentvpn:5.2.3 \
+  --push .
+```
 
 # Variables, Volumes, and Ports
 ## Environment Variables
@@ -86,12 +89,9 @@ $ docker run  -d \
 # Access the WebUI
 Access https://IPADDRESS:PORT from a browser on the same network. (for example: https://192.168.0.90:8080)
 
-## Default Credentials
+## Initial Credentials
 
-| Credential | Default Value |
-|----------|----------|
-|`username`| `admin` |
-|`password`| `adminadmin` |
+The initial username is `admin`. On a fresh profile qBittorrent generates a temporary password and prints it in `docker logs`; sign in with that password and set a permanent one immediately. The historical `adminadmin` password is no longer accepted.
 
 # How to use WireGuard 
 The container will fail to boot if `VPN_ENABLED` is set and there is no valid .conf file present in the /config/wireguard directory. Drop a .conf file from your VPN provider into /config/wireguard and start the container again. The file must have the name `wg0.conf`, or it will fail to start.

@@ -29,8 +29,7 @@ QBITTORRENTLOGPATH="/config/qBittorrent/data/logs/"
 QBITTORRENTLOG="qbittorrent.log"
 
 DAEMON="/usr/local/bin/qbittorrent-nox"
-DAEMON_ARGS="--profile=/config"
-DAEMONSTRING="$DAEMON $DAEMON_ARGS >> $QBITTORRENTLOGPATH$QBITTORRENTLOG 2>&1"
+DAEMON_ARGS="--profile=/config --confirm-legal-notice"
 
 export DBUS_SESSION_BUS_ADDRESS=""
 
@@ -77,9 +76,11 @@ do_start()
 		# 1 if daemon was already running
 		# 2 if daemon could not be started
 
-	start-stop-daemon --start --chuid $USER:$GROUP --test --quiet --make-pidfile --pidfile $PIDFILE --background --exec /bin/bash -- -c "$DAEMONSTRING" || return 1
+	start-stop-daemon --start --chuid "$USER:$GROUP" --test --quiet --pidfile "$PIDFILE" --startas "$DAEMON" -- $DAEMON_ARGS || return 1
 
-	start-stop-daemon --start --chuid $USER:$GROUP --make-pidfile --pidfile $PIDFILE --background --exec /bin/bash -- -c "$DAEMONSTRING" || return 2
+	# Keep stdout/stderr attached to PID 1 so qBittorrent's temporary WebUI
+	# password is visible through `docker logs` on a fresh profile.
+	start-stop-daemon --start --chuid "$USER:$GROUP" --make-pidfile --pidfile "$PIDFILE" --background --no-close --startas "$DAEMON" -- $DAEMON_ARGS || return 2
 	sleep 1
 	echo "[INFO] Started qBittorrent daemon successfully..." | ts '%Y-%m-%d %H:%M:%.S'
 }
@@ -89,8 +90,7 @@ do_start()
 #
 do_stop()
 {
-	start-stop-daemon --stop --exec "$DAEMONPATH$DAEMON"
-	sleep 2
+	start-stop-daemon --stop --retry=TERM/30/KILL/5 --pidfile "$PIDFILE" --remove-pidfile
 	return "$?"
 }
 
@@ -98,21 +98,35 @@ case "$1" in
   start)
 	[ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
 	do_start
-	case "$?" in
-		0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
-		2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+	start_status=$?
+	case "$start_status" in
+		0|1)
+			if [ "$VERBOSE" != no ]; then log_end_msg 0; fi
+			exit 0
+			;;
+		*)
+			if [ "$VERBOSE" != no ]; then log_end_msg 1; fi
+			exit 1
+			;;
 	esac
 	;;
   stop)
 	[ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
 	do_stop
-	case "$?" in
-		0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
-		2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+	stop_status=$?
+	case "$stop_status" in
+		0|1)
+			if [ "$VERBOSE" != no ]; then log_end_msg 0; fi
+			exit 0
+			;;
+		*)
+			if [ "$VERBOSE" != no ]; then log_end_msg 1; fi
+			exit 1
+			;;
 	esac
 	;;
   status)
-	status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
+	status_of_proc -p "$PIDFILE" "$DAEMON" "$NAME" && exit 0 || exit $?
 	;;
   restart|force-reload)
 	log_daemon_msg "Restarting $DESC" "$NAME"
@@ -121,14 +135,15 @@ case "$1" in
 	  0|1)
 		do_start
 		case "$?" in
-			0) log_end_msg 0 ;;
-			1) log_end_msg 1 ;; # Old process is still running
-			*) log_end_msg 1 ;; # Failed to start
+			0) log_end_msg 0; exit 0 ;;
+			1) log_end_msg 1; exit 1 ;; # Old process is still running
+			*) log_end_msg 1; exit 1 ;; # Failed to start
 		esac
 		;;
 	  *)
-	  	# Failed to stop
+		# Failed to stop
 		log_end_msg 1
+		exit 1
 		;;
 	esac
 	;;
