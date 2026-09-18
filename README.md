@@ -50,6 +50,33 @@ docker buildx build \
   --push .
 ```
 
+## Automatic builds on GitHub Container Registry
+
+The `Publish Docker image` GitHub Actions workflow builds native `linux/amd64`
+and `linux/arm64` images on every push to `master`. It can also be run manually
+from the Actions tab on `master`. A local commit triggers it only after being
+pushed to GitHub. Both builds must pass the qBittorrent version smoke test before
+the combined image is tagged.
+
+The workflow publishes `ghcr.io/moboi-gh/docker-qbittorrentvpn:latest` and
+`ghcr.io/moboi-gh/docker-qbittorrentvpn:sha-<full-commit-SHA>`. It uses the
+repository's `GITHUB_TOKEN` with `packages: write`; no personal access token or
+Docker Hub credentials are needed. The image's source label links the package
+to this repository.
+
+After the first successful publication, open the package's settings on GitHub
+and change its visibility to **Public** to allow pulls without authentication.
+New GHCR packages default to private, even for public repositories. Ensure
+Actions is enabled for this fork; if publishing to an existing package, grant
+this repository Actions write access in that package's settings.
+
+Once published and public, use this image in place of the Docker Hub image in
+the run command above, or pull it directly:
+
+```sh
+docker pull ghcr.io/moboi-gh/docker-qbittorrentvpn:latest
+```
+
 # Variables, Volumes, and Ports
 ## Environment Variables
 | Variable | Required | Function | Example | Default |
