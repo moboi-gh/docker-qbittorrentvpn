@@ -1,6 +1,6 @@
 # [qBittorrent](https://github.com/qbittorrent/qBittorrent), WireGuard and OpenVPN
-[![Docker Pulls](https://img.shields.io/docker/pulls/moboi/qbittorrentvpn)](https://hub.docker.com/r/moboi/qbittorrentvpn)
-[![Docker Image Size (tag)](https://img.shields.io/docker/image-size/moboi/qbittorrentvpn/5.2.3)](https://hub.docker.com/r/moboi/qbittorrentvpn)
+[![Publish Docker image](https://github.com/moboi-gh/docker-qbittorrentvpn/actions/workflows/publish-image.yml/badge.svg)](https://github.com/moboi-gh/docker-qbittorrentvpn/actions/workflows/publish-image.yml)
+[![Container image](https://img.shields.io/badge/ghcr.io-docker--qbittorrentvpn-blue)](https://github.com/moboi-gh/docker-qbittorrentvpn/pkgs/container/docker-qbittorrentvpn)
 
 Docker container which runs [qBittorrent](https://github.com/qbittorrent/qBittorrent) 5.2.3 with libtorrent 1.2.20 while connecting to WireGuard or OpenVPN with an iptables killswitch to prevent IP leakage when the tunnel goes down. Images are available for `linux/amd64` and `linux/arm64`.
 
@@ -18,8 +18,10 @@ Docker container which runs [qBittorrent](https://github.com/qbittorrent/qBittor
 * Created with [Unraid](https://unraid.net/) in mind
 * BitTorrent port 8999 exposed by default
 
-## Run container from Docker registry
-The container is available from the Docker registry and this is the simplest way to get it  
+## Run container from GitHub Container Registry
+
+Images are published publicly to [GHCR](https://github.com/moboi-gh/docker-qbittorrentvpn/pkgs/container/docker-qbittorrentvpn) and can be pulled without signing in. Use GHCR for current and future builds.
+
 To run the container use this command, with additional parameters, please refer to the Variables, Volumes, and Ports section:
 
 ```
@@ -33,20 +35,26 @@ $ docker run  -d \
               --cap-add NET_ADMIN \
               --sysctl "net.ipv4.conf.all.src_valid_mark=1" \
               --restart unless-stopped \
-              moboi/qbittorrentvpn:5.2.3
+              ghcr.io/moboi-gh/docker-qbittorrentvpn:latest
 ```
 
 ## Docker Tags
+
 | Tag | Description |
 |----------|----------|
-| `moboi/qbittorrentvpn:5.2.3` | qBittorrent 5.2.3 with libtorrent 1.2.20 for amd64 and arm64 |
+| `ghcr.io/moboi-gh/docker-qbittorrentvpn:latest` | Latest successful build from `master`, for amd64 and arm64 |
+| `ghcr.io/moboi-gh/docker-qbittorrentvpn:sha-<full-commit-SHA>` | Build from a specific Git commit, for amd64 and arm64 |
 
-To build and publish the multi-platform tag:
+Use a commit tag or image digest to pin a deployment. The workflow does not
+publish version-only tags such as `5.2.3`.
+
+To build and publish manually, first authenticate to `ghcr.io` with package
+write access, then run:
 
 ```sh
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
-  --tag moboi/qbittorrentvpn:5.2.3 \
+  --tag ghcr.io/moboi-gh/docker-qbittorrentvpn:latest \
   --push .
 ```
 
@@ -64,14 +72,13 @@ repository's `GITHUB_TOKEN` with `packages: write`; no personal access token or
 Docker Hub credentials are needed. The image's source label links the package
 to this repository.
 
-After the first successful publication, open the package's settings on GitHub
-and change its visibility to **Public** to allow pulls without authentication.
-New GHCR packages default to private, even for public repositories. Ensure
-Actions is enabled for this fork; if publishing to an existing package, grant
-this repository Actions write access in that package's settings.
+This repository's GHCR package is already public. If you fork the repository,
+the workflow publishes under `ghcr.io/<owner>/<repository>`. Enable Actions
+in your fork and, after the first publication, set your package's visibility
+to **Public** if you want anonymous pulls. If publishing to an existing
+package, grant your repository Actions write access in that package's settings.
 
-Once published and public, use this image in place of the Docker Hub image in
-the run command above, or pull it directly:
+Pull the current image directly:
 
 ```sh
 docker pull ghcr.io/moboi-gh/docker-qbittorrentvpn:latest
